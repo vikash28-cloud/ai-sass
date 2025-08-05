@@ -1,9 +1,14 @@
 import { Button } from "@/components/ui/button";
+import { UserButton } from "@clerk/nextjs";
 
 const DeshboardPage=()=>{
     return (
-        // protacted  page
-        <p>dashboard page</p>
+        // protacted  page\
+        <div>
+
+            <p>dashboard page</p>
+            <UserButton/>
+        </div>
     )
 }
 
