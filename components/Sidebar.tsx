@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 const montserrat = Montserrat({ weight: "600", subsets: ["latin"] })
 
+
 // array that holds the sidebar items or routes
 const routes = [
     {
@@ -54,6 +55,7 @@ const routes = [
 ];
 
 const Sidebar = () => {
+    
     return (
         <div className="space-y-4 py-4 flex flex-col h-full bg-[#111827] text-white" >
             <div className="px-3 py-2 flex-1">
