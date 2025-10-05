@@ -6,8 +6,7 @@ const DeshboardPage=()=>{
         // protacted  page\
         <div>
 
-            <p>dashboard page</p>
-            <UserButton/>
+            <p>dashboard page (Protected)</p>
         </div>
     )
 }

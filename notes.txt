@@ -1,3 +1,10 @@
 13:10 = setup
 
 26:00 = clerk authentication
+
+
+40:05 = siderbar
+
+51:00
+
+01:03:22  = mobile-sidebar component for mobile view 
