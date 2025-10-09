@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
+import Empty from "@/components/empty";
+import Loader from "@/components/loader";
+import { cn } from "@/lib/utils";
 
 export interface ChatMessage {
     role: "user" | "assistant";
@@ -51,7 +54,7 @@ const ConversationPage = () => {
 
         <div>
             {/* heading section */}
-            <Heading title="Conversation" description="out most advance conversation model" icon={MessageSquare} bgColor="bg-violet-500/10 " iconColor="text-violet-500" />
+            <Heading title="Conversation" description="most advance conversation model" icon={MessageSquare} bgColor="bg-violet-500/10 " iconColor="text-violet-500" />
 
             {/* form section */}
 
@@ -83,17 +86,44 @@ const ConversationPage = () => {
                         </form>
                     </Form>
                 </div>
-                <div className="space-y-4 mt-4">
-                    <div className="flex flex-col-reverse gap-y-4">
+                <div className="mt-6 space-y-4">
+                    {/* Loading State */}
+                    {isLoading && (
+                        <div className="p-6 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                            <Loader />
+                        </div>
+                    )}
+
+                    {/* Empty State */}
+                    {messages.length === 0 && !isLoading && (
+                        <Empty label="No conversation started yet." />
+                    )}
+
+                    {/* Messages */}
+                    <div className="flex flex-col gap-3">
                         {messages.map((message, index) => (
-                            <div key={index}>
-                                {typeof message.content === "string"
-                                    ? message.content
-                                    : JSON.stringify(message.content)}
+                            <div
+                                key={index}
+                                className={cn(
+                                    "flex w-full",
+                                    message.role === "user" ? "justify-end" : "justify-start"
+                                )}
+                            >
+                                <div
+                                    className={cn(
+                                        "max-w-[80%] sm:max-w-[70%] px-4 py-2 text-sm rounded-lg break-words",
+                                        message.role === "user"
+                                            ? "bg-black text-white rounded-br-none"
+                                            : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 rounded-bl-none"
+                                    )}
+                                >
+                                    {message.content}
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
+
             </div>
 
 
