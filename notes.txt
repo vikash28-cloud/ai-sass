@@ -10,3 +10,8 @@
 01:03:22  = mobile-sidebar component for mobile view 
 01:07:27 =  solving hyderation error
 01:20:00 =  dashboard tools page complete 
+01:55:43 =  my api usage limit exceded use another account
+also check "ChatCompletionMessageParam"
+
+
+gemini api is use instead of openai
