@@ -1,7 +1,7 @@
 "use client";
 import * as z from "zod"
 import { Heading } from "@/components/heading"
-import { MessageSquare } from "lucide-react"
+import { Code } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,7 @@ import Loader from "@/components/loader";
 import { cn } from "@/lib/utils";
 import UserAvatar from "@/components/user-avatar";
 import { BotAvatar } from "@/components/bot-avatar";
+import ReactMarkdown from "react-markdown";
 
 export interface ChatMessage {
     role: "user" | "assistant";
@@ -23,7 +24,7 @@ export interface ChatMessage {
 }
 
 
-const ConversationPage = () => {
+const CodePage = () => {
     const router = useRouter();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     // validation of form using zod 
@@ -41,7 +42,7 @@ const ConversationPage = () => {
                 content: values.prompt
             }
             const newMessages = [...messages, userMessage];
-            const response = await axios.post("/api/conversation", {
+            const response = await axios.post("/api/code", {
                 messages: newMessages,
             })
             setMessages((current) => [...current, userMessage, response.data]);
@@ -56,7 +57,7 @@ const ConversationPage = () => {
 
         <div>
             {/* heading section */}
-            <Heading title="Conversation" description="most advance conversation model" icon={MessageSquare} bgColor="bg-violet-500/10 " iconColor="text-violet-500" />
+            <Heading title="Code Generation" description="most advance Code Generation model" icon={Code} bgColor="bg-green-700/10 " iconColor="text-green-700" />
 
             {/* form section */}
 
@@ -74,7 +75,7 @@ const ConversationPage = () => {
                                             <Input
                                                 className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
                                                 disabled={isLoading}
-                                                placeholder="e.g my name is vikash tell me a joke"
+                                                placeholder="Write a python function to reverse a string"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -102,29 +103,52 @@ const ConversationPage = () => {
                     )}
 
                     {/* Messages */}
-                    <div className="flex flex-col gap-3">
-                        {messages.map((message, index) => (
-                            <div
-                                key={index}
-                                className={cn(
-                                    "flex w-full",
-                                    message.role === "user" ? "justify-end" : "justify-start"
-                                )}
-                            >
+                    <div className="flex flex-col gap-4 px-3 sm:px-6 py-4 w-full">
+                        {messages.map((message, index) => {
+                            const isUser = message.role === "user";
+                            return (
                                 <div
+                                    key={index}
                                     className={cn(
-                                        "max-w-[80%] sm:max-w-[70%] px-4 py-2 text-sm rounded-lg break-words",
-                                        message.role === "user"
-                                            ? "bg-white border border-gray-500  text-black rounded-br-none"
-                                            : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 rounded-bl-none"
+                                        "flex w-full items-start animate-fade-in",
+                                        isUser ? "justify-end" : "justify-start"
                                     )}
                                 >
-                                    {message.role ==="user"?<UserAvatar/>:<BotAvatar/>}
-                                    {message.content}
+                                    {/* Avatar */}
+                                    {!isUser && (
+                                        <div className="mr-3 flex-shrink-0">
+                                            <BotAvatar />
+                                        </div>
+                                    )}
+
+                                    {/* Message Bubble */}
+                                    <div
+                                        className={cn(
+                                            "relative group px-4 py-3 rounded-2xl text-sm shadow-sm transition-all duration-300 ease-in-out",
+                                            "max-w-[80%] sm:max-w-[70%] break-words leading-relaxed",
+                                            isUser
+                                                ? "bg-gradient-to-r from-blue-500 to-sky-400 text-white rounded-br-none hover:shadow-md"
+                                                : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded-bl-none hover:shadow-md"
+                                        )}
+                                        // 👇 Scrollable only for assistant messages
+                                        style={!isUser ? { maxHeight: "350px", overflowY: "auto" } : {}}
+                                    >
+                                        <ReactMarkdown >
+                                            {message.content || ""}
+                                        </ReactMarkdown>
+                                    </div>
+
+                                    {/* Avatar on the right for user */}
+                                    {isUser && (
+                                        <div className="ml-3 flex-shrink-0">
+                                            <UserAvatar />
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
+
                 </div>
 
             </div>
@@ -137,4 +161,4 @@ const ConversationPage = () => {
 }
 
 
-export default ConversationPage
+export default CodePage

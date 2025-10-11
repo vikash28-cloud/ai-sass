@@ -22,7 +22,7 @@ export const Heading = ({
         </div>
 
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 leading-tight">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
             {title}
           </h2>
           <p className="text-sm sm:text-base text-gray-500">{description}</p>
