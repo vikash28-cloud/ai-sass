@@ -17,3 +17,4 @@ also check "ChatCompletionMessageParam"
 gemini api is use instead of openai
 
 02:03:57 = user avatar comp.
+02:19:43 = image generation
