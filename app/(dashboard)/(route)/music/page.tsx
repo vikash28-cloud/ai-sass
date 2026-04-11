@@ -1,7 +1,7 @@
 "use client";
 import * as z from "zod";
 import { Heading } from "@/components/heading";
-import { MessageSquare, Music } from "lucide-react";
+import { Music } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { formSchema } from "./constants";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,15 +14,20 @@ import axios from "axios";
 import Empty from "@/components/empty";
 import Loader from "@/components/loader";
 
-
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
+type GeneratedMusicTrack = {
+  url: string;
+  prompt: string;
+  model: string;
+  title: string;
+  tags: string;
+  duration: number;
+};
 
 const MusicPage = () => {
   const router = useRouter();
-  const [music, setMusic] = useState<string>();
+  const [tracks, setTracks] = useState<GeneratedMusicTrack[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   // validation of form using zod
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -31,14 +36,54 @@ const MusicPage = () => {
     },
   });
   const isLoading = form.formState.isSubmitting;
+
+  const pollTask = async (taskId: string, prompt: string) => {
+    const maxAttempts = 18;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+
+      const response = await axios.get("/api/music", {
+        params: { taskId, prompt },
+      });
+
+      if (response.data.status === "succeeded") {
+        setTracks(response.data.tracks || []);
+        setStatusMessage(null);
+        return;
+      }
+    }
+
+    setStatusMessage("Still processing. Try again in a bit.");
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-        setMusic(undefined);
-     
-      const response = await axios.post("/api/music")
+      setTracks([]);
+      setError(null);
+      setStatusMessage("Creating your track...");
+
+      const response = await axios.post("/api/music", values);
+
+      if (response.data?.taskId) {
+        setStatusMessage("Music generation is running. This can take around 1-3 minutes.");
+        await pollTask(response.data.taskId, values.prompt);
+      }
+
       form.reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log(error);
+      if (axios.isAxiosError(error)) {
+        if (typeof error.response?.data === "string") {
+          setError(error.response.data);
+        } else if (typeof error.response?.data?.message === "string") {
+          setError(error.response.data.message);
+        } else {
+          setError("Failed to generate music.");
+        }
+      } else {
+        setError("Failed to generate music.");
+      }
     } finally {
       router.refresh();
     }
@@ -96,15 +141,48 @@ const MusicPage = () => {
             </div>
           )}
 
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          {statusMessage && !error && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {statusMessage}
+            </div>
+          )}
+
           {/* Empty State */}
-          {!music && !isLoading && (
+          {tracks.length === 0 && !isLoading && !error && !statusMessage && (
             <Empty label="No Music generated yet" />
           )}
 
-          {/* rendering Messages */}
+          <div className="space-y-4">
+            {tracks.map((track, index) => (
+              <div key={`${track.url}-${index}`} className="space-y-4 rounded-xl border bg-white p-4 shadow-sm">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{track.title}</p>
+                  <p className="text-xs text-gray-500">
+                    {track.model} | {track.tags} | {track.duration}s
+                  </p>
+                  <p className="mt-2 text-sm text-gray-600">{track.prompt}</p>
+                </div>
 
-          <div>
-            music will be generated here
+                <audio controls className="w-full">
+                  <source src={track.url} />
+                  Your browser does not support audio playback.
+                </audio>
+
+                <a
+                  href={track.url}
+                  download={`${track.title}.mp3`}
+                  className="inline-flex text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                >
+                  Download audio
+                </a>
+              </div>
+            ))}
           </div>
          
         </div>
