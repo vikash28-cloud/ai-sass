@@ -1,75 +1,47 @@
 "use client";
+
 import * as z from "zod";
-import { Heading } from "@/components/heading";
-import { Music } from "lucide-react";
+import axios from "axios";
+import { Download, Music, Sparkles, Wand2, Waves } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { formSchema } from "./constants";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { Heading } from "@/components/heading";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import axios from "axios";
 import Empty from "@/components/empty";
 import Loader from "@/components/loader";
-
-type GeneratedMusicTrack = {
-  url: string;
-  prompt: string;
-  model: string;
-  title: string;
-  tags: string;
-  duration: number;
-};
+import { formSchema } from "./constants";
 
 const MusicPage = () => {
   const router = useRouter();
-  const [tracks, setTracks] = useState<GeneratedMusicTrack[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [generatedText, setGeneratedText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  // validation of form using zod
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       prompt: "",
     },
   });
+
   const isLoading = form.formState.isSubmitting;
-
-  const pollTask = async (taskId: string, prompt: string) => {
-    const maxAttempts = 18;
-
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-
-      const response = await axios.get("/api/music", {
-        params: { taskId, prompt },
-      });
-
-      if (response.data.status === "succeeded") {
-        setTracks(response.data.tracks || []);
-        setStatusMessage(null);
-        return;
-      }
-    }
-
-    setStatusMessage("Still processing. Try again in a bit.");
-  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      setTracks([]);
+      setAudioUrl(null);
+      setGeneratedText(null);
       setError(null);
-      setStatusMessage("Creating your track...");
 
-      const response = await axios.post("/api/music", values);
+      const response = await axios.post("/api/music", {
+        prompt: values.prompt,
+      });
 
-      if (response.data?.taskId) {
-        setStatusMessage("Music generation is running. This can take around 1-3 minutes.");
-        await pollTask(response.data.taskId, values.prompt);
-      }
-
+      setAudioUrl(response.data.audio);
+      setGeneratedText(response.data.text || null);
       form.reset();
     } catch (error: unknown) {
       console.log(error);
@@ -82,109 +54,181 @@ const MusicPage = () => {
           setError("Failed to generate music.");
         }
       } else {
-        setError("Failed to generate music.");
+        setError(error instanceof Error ? error.message : "Failed to generate music.");
       }
     } finally {
       router.refresh();
     }
   };
+
   return (
     <div>
-      {/* heading section */}
       <Heading
         title="Music"
-        description="Turn your prompt into music"
+        description="Type a prompt and generate a 30-second Lyria 3 music clip"
         icon={Music}
         bgColor="bg-emerald-500/10 "
         iconColor="text-emerald-500"
       />
 
-      {/* form section */}
-
       <div className="px-4 lg:px-8">
-        <div>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
-            >
-              <FormField
-                name="prompt"
-                render={({ field }) => (
-                  <FormItem className="col-span-12 lg:col-span-10">
-                    <FormControl className="m-0 p-0">
-                      <Input
-                        className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
-                        disabled={isLoading}
-                        placeholder="E.g Piano solo"
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <Button
-                className="col-span-12 lg:col-span-2 w-full"
-                disabled={isLoading}
-                variant="default"
-              >
-                Generate
-              </Button>
-            </form>
-          </Form>
-        </div>
-        <div className="mt-6 space-y-4">
-          {/* Loading State */}
-          {isLoading && (
-            <div className="p-6 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-              <Loader />
-            </div>
-          )}
+        <div className="mx-auto max-w-5xl">
+          <div className="relative overflow-hidden rounded-[2rem] border border-emerald-100 bg-[radial-gradient(circle_at_top_left,#d1fae5,transparent_34%),linear-gradient(135deg,#022c22,#064e3b_45%,#111827)] p-6 text-white shadow-2xl shadow-emerald-950/20 md:p-8">
+            <div className="absolute right-8 top-8 h-28 w-28 rounded-full bg-emerald-300/20 blur-3xl" />
+            <div className="absolute bottom-0 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-cyan-300/10 blur-3xl" />
 
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+            <div className="relative grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+              <div>
+                <div className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-emerald-50 backdrop-blur">
+                  <Sparkles className="mr-2 h-3.5 w-3.5" />
+                  Powered by Lyria 3 Clip
+                </div>
+                <h2 className="mt-5 text-3xl font-bold tracking-tight md:text-5xl">
+                  Turn one idea into a finished track.
+                </h2>
+                <p className="mt-4 max-w-xl text-sm leading-6 text-emerald-50/80">
+                  Describe the mood, genre, instruments, or lyrics. The model returns a clean
+                  30-second MP3 you can play and download.
+                </p>
+              </div>
 
-          {statusMessage && !error && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {statusMessage}
-            </div>
-          )}
-
-          {/* Empty State */}
-          {tracks.length === 0 && !isLoading && !error && !statusMessage && (
-            <Empty label="No Music generated yet" />
-          )}
-
-          <div className="space-y-4">
-            {tracks.map((track, index) => (
-              <div key={`${track.url}-${index}`} className="space-y-4 rounded-xl border bg-white p-4 shadow-sm">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{track.title}</p>
-                  <p className="text-xs text-gray-500">
-                    {track.model} | {track.tags} | {track.duration}s
-                  </p>
-                  <p className="mt-2 text-sm text-gray-600">{track.prompt}</p>
+              <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-xl md:p-5">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-300 text-emerald-950">
+                    <Wand2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Music prompt</p>
+                    <p className="text-xs text-emerald-50/70">Be specific for better results</p>
+                  </div>
                 </div>
 
-                <audio controls className="w-full">
-                  <source src={track.url} />
-                  Your browser does not support audio playback.
-                </audio>
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="grid grid-cols-12 gap-3"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="prompt"
+                      render={({ field }) => (
+                        <FormItem className="col-span-12 md:col-span-9">
+                          <FormControl className="m-0 p-0">
+                            <Input
+                              className="h-12 border-white/10 bg-white/95 px-4 text-gray-950 outline-none placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-emerald-300"
+                              disabled={isLoading}
+                              placeholder="E.g. cinematic lo-fi beat with warm piano and soft drums"
+                              {...field}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <a
-                  href={track.url}
-                  download={`${track.title}.mp3`}
-                  className="inline-flex text-sm font-medium text-emerald-600 hover:text-emerald-700"
-                >
-                  Download audio
-                </a>
+                    <Button
+                      className="col-span-12 h-12 w-full bg-emerald-300 font-semibold text-emerald-950 hover:bg-emerald-200 md:col-span-3"
+                      disabled={isLoading}
+                      variant="default"
+                    >
+                      {isLoading ? "Creating..." : "Generate"}
+                    </Button>
+                  </form>
+                </Form>
               </div>
-            ))}
+            </div>
           </div>
-         
+
+          <div className="mt-6 space-y-5">
+            {isLoading && (
+              <div className="overflow-hidden rounded-3xl border bg-white p-6 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
+                    <Loader />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Generating your track</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Lyria is composing the audio, structure, and music details.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-5 flex h-16 items-end gap-1.5">
+                  {Array.from({ length: 28 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="w-full rounded-full bg-emerald-500/70"
+                      style={{
+                        height: `${22 + ((index * 17) % 42)}px`,
+                        opacity: 0.35 + ((index % 5) * 0.12),
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            {audioUrl && (
+              <div className="overflow-hidden rounded-3xl border bg-white shadow-sm">
+                <div className="border-b bg-gradient-to-r from-emerald-50 via-white to-cyan-50 p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/25">
+                        <Waves className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-gray-950">Generated music</p>
+                        <p className="text-sm text-gray-500">30-second MP3 clip ready to play</p>
+                      </div>
+                    </div>
+
+                    <a
+                      href={audioUrl}
+                      download="lyria-3-music.mp3"
+                      className="inline-flex h-10 items-center justify-center rounded-full bg-gray-950 px-4 text-sm font-medium text-white hover:bg-gray-800"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </a>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <audio className="w-full" src={audioUrl} controls />
+                </div>
+              </div>
+            )}
+
+            {generatedText && (
+              <div className="rounded-3xl border bg-white p-5 shadow-sm">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-950">
+                  <Music className="h-4 w-4 text-emerald-600" />
+                  Track details
+                </div>
+                <div className="whitespace-pre-wrap rounded-2xl bg-gray-50 p-4 text-sm leading-6 text-gray-700">
+                  {generatedText}
+                </div>
+              </div>
+            )}
+
+            {!isLoading && !error && !audioUrl && (
+              <div className="rounded-3xl border border-dashed bg-white p-10 text-center shadow-sm">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                  <Music className="h-7 w-7" />
+                </div>
+                <Empty label="Enter a prompt to generate music" />
+                <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
+                  Try prompts like &quot;uplifting synthwave for a product launch&quot; or
+                  &quot;soft piano background for a study video.&quot;
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
